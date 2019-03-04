@@ -21,16 +21,5 @@ app.config['SWAGGER_INFO'] = {
     'schemes': ['http', 'https'],
 }
 
-# optional. Add/Update elements in the documentation at run-time without deleting subtrees.
-add_documentation({'paths': {'/status': {'get': {'parameters': [
-    {
-        'in': 'query',
-        'name': 'foobar',
-        'required': False,
-        'description': 'special query parameter',
-        'type': 'string'
-    }]
-}}}})
-
 if __name__ == '__main__':
     app.run(host='0.0.0.0')
