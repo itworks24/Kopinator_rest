@@ -3,10 +3,18 @@ MONGO_URI = "mongodb://kopinator-test-user:zegdcPxztENMtlC@92.53.100.60:27017/ko
 RESOURCE_METHODS = ['GET', 'POST', 'DELETE']
 ITEM_METHODS = ['GET', 'PATCH', 'PUT', 'DELETE']
 
+X_DOMAINS = ['http://localhost:8000',  # The domain where Swagger UI is running
+             'http://editor.swagger.io',
+             'http://petstore.swagger.io',
+             'https://inspector.swagger.io']
+X_HEADERS = ['Content-Type', 'If-Match']  # Needed for the "Try it out" buttons
+
+TRANSPARENT_SCHEMA_RULES = True
+
 DOMAIN = {
     'users': {
         'schema': {
-            'useremail': {
+            'email': {
                 'type': 'string',
                 'minlength': 5,
                 'maxlength': 255,
@@ -32,9 +40,10 @@ DOMAIN = {
         }
     },
     'recordpatterns':{
-        'shema':{
+        'schema':{
             'user': {
                 'type': 'objectid', 
+                'required': True,
                 'data_relation': {
                     'resource': 'users',
                     'field': '_id', 
@@ -44,7 +53,8 @@ DOMAIN = {
             'recordtype': {
                 'type': 'string',
                 'required': True,
-                'allowed': ['income', 'expenses']
+                'allowed': ['income', 'expenses'],
+                'default': 'income'
             }, 
             'amount': {
                 'type': 'float',
