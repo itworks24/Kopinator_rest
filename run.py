@@ -1,12 +1,14 @@
 from eve import Eve
+from eve.methods.post import post_internal
 from eve_swagger import swagger, add_documentation
-from eve.auth import TokenAuth
+from eve.auth import TokenAuth, BasicAuth
 from flask import request, g
 import json
 import hashlib
 import random
 import string
 import datetime
+from bson.objectid import ObjectId
 
 def get_hash(source):
     m = hashlib.md5()
@@ -16,20 +18,20 @@ def get_hash(source):
 def get_db_prefix(source):
     return 'userdb_' + source.replace('.', '_')
 
-def get_current_user(token):
-    pass
-
 class TokenAuth(TokenAuth):
-    def check_auth(self, token, allowed_roles, resource, method):
-        print(token)
-        email, token = token.split(':')
+    def check_auth(self, token, allowed_roles, resource, method): 
+        print(request.headers.get('account-id'), request.headers.get('token'))
+        account_id = request.headers.get('account-id')
+        token = request.headers.get('token')
+        if account_id == None or token == None:
+            return None
         tokens = app.data.driver.db['tokens']
-        token_found = tokens.find_one({'email' : email, 'token': token})
-        g.user_id = email
+        token_found = tokens.find_one({'account_id' : ObjectId(account_id), 'token': token})
+        if token_found != None:
+            self.set_request_auth_value(ObjectId(account_id)) 
         return token_found
 
-##app = Eve(auth = TokenAuth)
-app = Eve()
+app = Eve(auth = TokenAuth)
 app.register_blueprint(swagger)
 
 # required. See http://swagger.io/specification/#infoObject for details.
@@ -55,17 +57,26 @@ def register_account():
     password = request.json.get('password')
     accounts = app.data.driver.db['accounts']
     accounts_found = accounts.find_one({'email' : email})
+
     if accounts_found != None:
         result_code = 406
         result = {'result' : 'User alredy exists'}
-    else:
-        try:
-            insert_result = accounts.insert_one({'email' : email, 'passwordhash' : get_hash(password)})
-            result_code = 200
-            result = {'result' : 'Ok'}
-        except:
-            result_code = 501
-            result = {'result' : 'Internal DB error'}
+        return json.dumps(result), result_code
+
+    new_account = {
+        'email' : email,
+        'passwordhash' : get_hash(password)
+    }
+    insert_result = accounts.insert_one(new_account)
+    print(insert_result)
+    new_user = {
+        'email' : email,
+        'account_id' : ObjectId(insert_result.inserted_id)
+    }
+    post_internal('users', new_user)
+    result_code = 200
+    result = {'result' : 'ok', 'account-id' : str(insert_result.inserted_id)}
+
     return json.dumps(result), result_code
 
 @app.route('/updatetoken', methods = ['POST'])
@@ -76,35 +87,31 @@ def update_token():
     found_account = accounts.find_one({'email' : email, 'passwordhash' : passwordhash})
     if found_account == None:
         result_code = 406
-        result = {'result' : 'User email or password doesn\'t match', 'token' : ''}
+        result = {'result' : 'User email or password doesn\'t match', 'user_id' : '', 'token' : '', 'expires' : ''}
     else:
         tokens = app.data.driver.db['tokens']
-        try:
-            new_token = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(25))
-            insert_result = tokens.insert_one({'email' : email, 
-                                                'token' : new_token,
-                                                'expires' : datetime.datetime.now() + datetime.timedelta(days=3)})
-            result_code = 200
-            result = {'result' : 'Ok', 'token' : new_token}
-        except Exception as e:
-            print(str(e)) 
-            result_code = 501
-            result = {'result' : 'Internal DB error', 'token' : ''}
+        filter = {'account_id' : found_account['_id']}
+        token_found = tokens.find_one(filter)
+        expires = datetime.datetime.now() + datetime.timedelta(days=3)
+        if token_found == None:
+            token = ''.join(random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for _ in range(25))
+            insert_result = tokens.insert_one({'account_id' : found_account['_id'], 
+                                                'token' : token,
+                                                'expires' : expires})
+        else:
+            token = token_found['token']
+            insert_result = tokens.update_one(filter,
+                                                {'$set': {'expires' : expires}})
+        result_code = 200
+        result = {'result' : 'ok', 'account-id' : str(found_account['_id']), 'token' : token, 'expires' : expires.strftime("%d.%m.%Y %H:%M:%S")}
+        
     return json.dumps(result), result_code
 
-def pre_get_auth(resource, request, lookup):
-    #print(g.user_id)
-    #email = g.user_id
-    email = 'zv@itworks24.ru'
-    users = app.data.driver.db['users']
-    user = users.find_one({'email': email})
-    print(user)
-    if resource == 'users':
-        lookup.update({'email': email})
-    else:
-        lookup.update({'user': user['_id']})    
+@app.after_request
+def after_request(response):
+    del response.headers['www-authenticate']
+    return response
 
 if __name__ == '__main__':
-    app.on_pre_GET += pre_get_auth
     app.run(host='0.0.0.0')
     

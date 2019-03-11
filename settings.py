@@ -1,6 +1,8 @@
+import datetime
+
 MONGO_URI = "mongodb://kopinator-test-user:zegdcPxztENMtlC@92.53.100.60:27017/kopinator-test"
 
-RESOURCE_METHODS = ['GET', 'POST', 'DELETE']
+RESOURCE_METHODS = ['GET', 'POST']
 ITEM_METHODS = ['GET', 'PATCH', 'PUT', 'DELETE']
 
 X_DOMAINS = ['http://localhost:8000',  # The domain where Swagger UI is running
@@ -11,45 +13,37 @@ X_HEADERS = ['Content-Type', 'If-Match']  # Needed for the "Try it out" buttons
 
 TRANSPARENT_SCHEMA_RULES = True
 
+DEBUG = True
+
+AUTH_FIELD = 'account_id'
+
 DOMAIN = {
     'users': {
         'schema': {
             'email': {
                 'type': 'string',
-                'minlength': 5,
-                'maxlength': 255,
                 'required': True,
-                'unique': True,
+                'unique_to_user': True,
+                'regex': '\A[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}'
             },
             'firstname': {
                 'type': 'string',
-                'minlength': 1,
-                'maxlength': 50,
                 'required': True,
+                'default': 'Vasia'
             },
             'lastname': {
                 'type': 'string',
-                'minlength': 1,
-                'maxlength': 50,
                 'required': False,
+                'default': 'Petrov'
             },
-            'active': {
-                'type': 'boolean',
-                'default': True
+            'account_id':{
+                'type': 'objectid', 
+                'required': True,    
             }
         }
     },
     'recordpatterns':{
         'schema':{
-            'user': {
-                'type': 'objectid', 
-                'required': True,
-                'data_relation': {
-                    'resource': 'users',
-                    'field': '_id', 
-                    'embeddable': True
-                 }
-            },
             'recordtype': {
                 'type': 'string',
                 'required': True,
@@ -62,6 +56,7 @@ DOMAIN = {
             },
             'fromdate':{
                 'type': 'datetime',
+                'default': datetime.datetime.now()
             },
             'duetodate':{
                 'type': 'datetime',
@@ -70,18 +65,11 @@ DOMAIN = {
     },
     'records': {
         'schema': {
-            'user': {
-                'type': 'objectid', 
-                'data_relation': {
-                    'resource': 'users',
-                    'field': '_id', 
-                    'embeddable': True
-                 }
-            },
             'recordtype': {
                 'type': 'string',
                 'required': True,
-                'allowed': ['income', 'expenses']
+                'allowed': ['income', 'expenses'],
+                'default': 'income'
             }, 
             'amount': {
                 'type': 'float',
@@ -90,6 +78,7 @@ DOMAIN = {
             'date':{
                 'type': 'datetime',
                 'required': True,
+                'default': datetime.datetime.now()
             },
             'pattern':{
                 'type': 'objectid', 
