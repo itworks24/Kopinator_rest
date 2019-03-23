@@ -1,15 +1,16 @@
 import datetime
+from balance import income, expenses
 
 MONGO_URI = "mongodb://kopinator-test-user:zegdcPxztENMtlC@92.53.100.60:27017/kopinator-test"
 
 RESOURCE_METHODS = ['GET', 'POST']
 ITEM_METHODS = ['GET', 'PATCH', 'PUT', 'DELETE']
 
-X_DOMAINS = ['http://localhost:8000',  # The domain where Swagger UI is running
+X_DOMAINS = ['http://localhost:8000',
              'http://editor.swagger.io',
              'http://petstore.swagger.io',
              'https://inspector.swagger.io']
-X_HEADERS = ['Content-Type', 'If-Match']  # Needed for the "Try it out" buttons
+X_HEADERS = ['Content-Type', 'If-Match']
 
 TRANSPARENT_SCHEMA_RULES = True
 
@@ -40,14 +41,16 @@ DOMAIN = {
                 'type': 'objectid', 
                 'required': True,    
             }
-        }
+        },
+        'RESOURCE_METHODS':['GET'],
+        'ITEM_METHODS':['GET', 'PATCH'],
     },
     'recordpatterns':{
         'schema':{
             'recordtype': {
                 'type': 'string',
                 'required': True,
-                'allowed': ['income', 'expenses'],
+                'allowed': [income, expenses],
                 'default': 'income'
             }, 
             'amount': {
@@ -56,7 +59,7 @@ DOMAIN = {
             },
             'fromdate':{
                 'type': 'datetime',
-                'default': datetime.datetime.now()
+                'default': datetime.datetime.utcnow()
             },
             'duetodate':{
                 'type': 'datetime',
@@ -68,26 +71,47 @@ DOMAIN = {
             'recordtype': {
                 'type': 'string',
                 'required': True,
-                'allowed': ['income', 'expenses'],
+                'allowed': [income, expenses],
                 'default': 'income'
             }, 
             'amount': {
                 'type': 'float',
                 'required': True,
             },
-            'date':{
+            'date' : {
                 'type': 'datetime',
                 'required': True,
-                'default': datetime.datetime.now()
+                'default': datetime.datetime.utcnow()
             },
-            'pattern':{
+            'pattern': {
                 'type': 'objectid', 
                 'data_relation': {
                     'resource': 'recordpatterns',
                     'field': '_id', 
                     'embeddable': True
                 }    
+            },
+            'comment' : {
+                'type': 'string'    
             }
         }
+    },
+    'balance': {
+        'schema': {
+            'date': {
+                'type': 'datetime'
+            }, 
+            'income' : {
+                'type': 'float'
+            },
+            'expenses' : {
+                'type': 'float'
+            },
+            'balance': {
+                'type': 'float'
+            },
+        },
+        'RESOURCE_METHODS':['GET', 'POST'],
+        'ITEM_METHODS':['GET'],
     }
 }
