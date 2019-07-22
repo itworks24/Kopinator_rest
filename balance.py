@@ -49,7 +49,6 @@ def recalculate_balance(date):
 
     print(current_records)
 
-    ##lmb = lambda record: record['amount'] if record['record_type'] == income else 0
     total_income = sum([record['amount'] for record in current_records if record['recordtype'] == income])
     total_days = calendar.monthrange(date.year, date.month)[1]
     day_limit = round(total_income / total_days, 2)

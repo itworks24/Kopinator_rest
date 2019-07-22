@@ -8,6 +8,8 @@ import json
 import datetime
 import random
 import string
+import datetime
+import pytz
 
 def get_hash(source):
     m = hashlib.md5()
@@ -53,6 +55,26 @@ def register_account():
     result_code = 200
     result = {'result' : 'ok', 'account-id' : str(insert_result.inserted_id)}
 
+    return json.dumps(result), result_code
+
+@auth_blueprint.route('/checktoken', methods = ['POST'])
+def check_token():
+    utc=pytz.UTC
+    accountId = request.json.get('account-id')
+    token = request.json.get('token')
+    tokens = current_app.data.driver.db['tokens']
+    filter = {'account_id' : ObjectId(accountId), 'token': token}
+    token_found = tokens.find_one(filter)
+    now = datetime.datetime.now()
+    if token_found == None: 
+        result_code = 406
+        result = {'result' : 'no token found'}
+    elif token_found['expires'].replace(tzinfo=utc) < now.replace(tzinfo=utc):
+        result_code = 406
+        result = {'result' : 'token expired'}
+    else:
+        result_code = 200
+        result = {'result' : 'ok'}
     return json.dumps(result), result_code
 
 @auth_blueprint.route('/updatetoken', methods = ['POST'])

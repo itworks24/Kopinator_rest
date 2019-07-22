@@ -1,7 +1,7 @@
 import datetime
 from balance import income, expenses
 
-MONGO_URI = "mongodb://kopinator-test-user:zegdcPxztENMtlC@92.53.100.60:27017/kopinator-test"
+MONGO_URI = "mongodb://kopinator-test-user:zegdcPxztENMtlC@127.0.0.1:27017/kopinator-test"
 
 RESOURCE_METHODS = ['GET', 'POST']
 ITEM_METHODS = ['GET', 'PATCH', 'PUT', 'DELETE']
